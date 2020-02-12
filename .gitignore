@@ -7,3 +7,21 @@ _test/echo_server
 _test/tmp
 _vendor*
 gen
+
+# ides
+.idea
+.vscode
+
+
+# go testing output
+*.out
+*.test
+profile*.pdf
+
+
+# binary exes
+cmd/*/bin_*
+
+
+# config with real username, password...
+conf/ignore*.sh
