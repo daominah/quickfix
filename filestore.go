@@ -63,7 +63,7 @@ func newFileStore(sessionID SessionID, dirname string) (*fileStore, error) {
 
 	store := &fileStore{
 		sessionID:          sessionID,
-		cache:              &memoryStore{},
+		cache:              newMemoryStore(),
 		offsets:            make(map[int]msgDef),
 		bodyFname:          path.Join(dirname, fmt.Sprintf("%s.%s", sessionPrefix, "body")),
 		headerFname:        path.Join(dirname, fmt.Sprintf("%s.%s", sessionPrefix, "header")),

@@ -2,6 +2,10 @@ package quickfix
 
 import "time"
 
+// initMsgSeqNum is MsgSeqNum after store_Reset.
+// HNX fucker wants MsgSeqNum start at 0, the whole world want MsgSeqNum start at 1
+const initMsgSeqNum = 0
+
 //The MessageStore interface provides methods to record and retrieve messages for resend purposes
 type MessageStore interface {
 	NextSenderMsgSeqNum() int
@@ -33,6 +37,13 @@ type memoryStore struct {
 	senderMsgSeqNum, targetMsgSeqNum int
 	creationTime                     time.Time
 	messageMap                       map[int][]byte
+}
+
+func newMemoryStore() *memoryStore {
+	return &memoryStore{
+		senderMsgSeqNum: initMsgSeqNum -1,
+		targetMsgSeqNum: initMsgSeqNum -1,
+	}
 }
 
 func (store *memoryStore) NextSenderMsgSeqNum() int {
@@ -67,8 +78,8 @@ func (store *memoryStore) CreationTime() time.Time {
 }
 
 func (store *memoryStore) Reset() error {
-	store.senderMsgSeqNum = 0
-	store.targetMsgSeqNum = 0
+	store.senderMsgSeqNum = initMsgSeqNum - 1
+	store.targetMsgSeqNum = initMsgSeqNum - 1
 	store.creationTime = time.Now()
 	store.messageMap = nil
 	return nil
@@ -106,7 +117,7 @@ func (store *memoryStore) GetMessages(beginSeqNum, endSeqNum int) ([][]byte, err
 type memoryStoreFactory struct{}
 
 func (f memoryStoreFactory) Create(sessionID SessionID) (MessageStore, error) {
-	m := new(memoryStore)
+	m := newMemoryStore()
 	m.Reset()
 	return m, nil
 }

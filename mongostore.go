@@ -60,7 +60,7 @@ func (f mongoStoreFactory) Create(sessionID SessionID) (msgStore MessageStore, e
 func newMongoStore(sessionID SessionID, mongoURL string, mongoDatabase string, messagesCollection string, sessionsCollection string) (store *mongoStore, err error) {
 	store = &mongoStore{
 		sessionID:          sessionID,
-		cache:              &memoryStore{},
+		cache:              newMemoryStore(),
 		mongoURL:           mongoURL,
 		mongoDatabase:      mongoDatabase,
 		messagesCollection: messagesCollection,

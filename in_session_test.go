@@ -1,6 +1,7 @@
 package quickfix
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,7 +14,10 @@ type InSessionTestSuite struct {
 }
 
 func TestInSessionTestSuite(t *testing.T) {
-	suite.Run(t, new(InSessionTestSuite))
+	s := new(InSessionTestSuite)
+	s.SessionSuiteRig.Init()
+	fmt.Printf("InSessionTestSuite0: %#v", *s)
+	suite.Run(t, s)
 }
 
 func (s *InSessionTestSuite) SetupTest() {
@@ -75,8 +79,8 @@ func (s *InSessionTestSuite) TestLogoutResetOnLogout() {
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeLogout), s.MockApp.lastToAdmin)
 
-	s.NextTargetMsgSeqNum(1)
-	s.NextSenderMsgSeqNum(1)
+	s.NextTargetMsgSeqNum(initMsgSeqNum)
+	s.NextSenderMsgSeqNum(initMsgSeqNum)
 	s.NoMessageQueued()
 }
 
@@ -215,21 +219,21 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminExpectGapFill() {
 	s.LastToAdminMessageSent()
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 3)
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
 
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToAdmin")
-	s.fixMsgIn(s.session, s.ResendRequest(1))
+	s.fixMsgIn(s.session, s.ResendRequest(initMsgSeqNum))
 
 	s.MockApp.AssertExpectations(s.T())
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeSequenceReset), s.MockApp.lastToAdmin)
-	s.FieldEquals(tagMsgSeqNum, 1, s.MockApp.lastToAdmin.Header)
+	s.FieldEquals(tagMsgSeqNum, initMsgSeqNum, s.MockApp.lastToAdmin.Header)
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToAdmin.Header)
-	s.FieldEquals(tagNewSeqNo, 4, s.MockApp.lastToAdmin.Body)
+	s.FieldEquals(tagNewSeqNo, initMsgSeqNum-1+4, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
 
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum-1+4)
 	s.State(inSession{})
 }
 

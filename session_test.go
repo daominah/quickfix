@@ -331,7 +331,7 @@ func (s *SessionSuite) TestCheckSessionTimeInRange() {
 		s.session.State = test.before
 
 		now := time.Now().UTC()
-		store := new(memoryStore)
+		store := newMemoryStore()
 		if test.before.IsSessionTime() {
 			s.Require().Nil(store.Reset())
 		} else {
@@ -390,7 +390,7 @@ func (s *SessionSuite) TestCheckSessionTimeNotInRange() {
 		now := time.Now().UTC()
 		s.session.SessionTime = internal.NewUTCTimeRange(
 			internal.NewTimeOfDay(now.Add(time.Hour).Clock()),
-			internal.NewTimeOfDay(now.Add(time.Duration(2)*time.Hour).Clock()),
+			internal.NewTimeOfDay(now.Add(time.Duration(2) * time.Hour).Clock()),
 		)
 
 		if test.expectOnLogout {
@@ -443,7 +443,7 @@ func (s *SessionSuite) TestCheckSessionTimeInRangeButNotSameRangeAsStore() {
 
 		now := time.Now().UTC()
 		s.session.SessionTime = internal.NewUTCTimeRange(
-			internal.NewTimeOfDay(now.Add(time.Duration(-1)*time.Hour).Clock()),
+			internal.NewTimeOfDay(now.Add(time.Duration(-1) * time.Hour).Clock()),
 			internal.NewTimeOfDay(now.Add(time.Hour).Clock()),
 		)
 
@@ -493,7 +493,7 @@ func (s *SessionSuite) TestIncomingNotInSessionTime() {
 		now := time.Now().UTC()
 		s.session.SessionTime = internal.NewUTCTimeRange(
 			internal.NewTimeOfDay(now.Add(time.Hour).Clock()),
-			internal.NewTimeOfDay(now.Add(time.Duration(2)*time.Hour).Clock()),
+			internal.NewTimeOfDay(now.Add(time.Duration(2) * time.Hour).Clock()),
 		)
 		if test.expectOnLogout {
 			s.MockApp.On("OnLogout")
@@ -542,7 +542,7 @@ func (s *SessionSuite) TestSendAppMessagesNotInSessionTime() {
 		now := time.Now().UTC()
 		s.session.SessionTime = internal.NewUTCTimeRange(
 			internal.NewTimeOfDay(now.Add(time.Hour).Clock()),
-			internal.NewTimeOfDay(now.Add(time.Duration(2)*time.Hour).Clock()),
+			internal.NewTimeOfDay(now.Add(time.Duration(2) * time.Hour).Clock()),
 		)
 		if test.expectOnLogout {
 			s.MockApp.On("OnLogout")
@@ -587,7 +587,7 @@ func (s *SessionSuite) TestTimeoutNotInSessionTime() {
 			now := time.Now().UTC()
 			s.session.SessionTime = internal.NewUTCTimeRange(
 				internal.NewTimeOfDay(now.Add(time.Hour).Clock()),
-				internal.NewTimeOfDay(now.Add(time.Duration(2)*time.Hour).Clock()),
+				internal.NewTimeOfDay(now.Add(time.Duration(2) * time.Hour).Clock()),
 			)
 			if test.expectOnLogout {
 				s.MockApp.On("OnLogout")

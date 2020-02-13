@@ -14,7 +14,9 @@ type LogonStateTestSuite struct {
 }
 
 func TestLogonStateTestSuite(t *testing.T) {
-	suite.Run(t, new(LogonStateTestSuite))
+	s := new(LogonStateTestSuite)
+	s.SessionSuiteRig.Init()
+	suite.Run(t, s)
 }
 
 func (s *LogonStateTestSuite) SetupTest() {

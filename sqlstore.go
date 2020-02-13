@@ -53,7 +53,7 @@ func (f sqlStoreFactory) Create(sessionID SessionID) (msgStore MessageStore, err
 func newSQLStore(sessionID SessionID, driver string, dataSourceName string, connMaxLifetime time.Duration) (store *sqlStore, err error) {
 	store = &sqlStore{
 		sessionID:          sessionID,
-		cache:              &memoryStore{},
+		cache:              newMemoryStore(),
 		sqlDriver:          driver,
 		sqlDataSourceName:  dataSourceName,
 		sqlConnMaxLifetime: connMaxLifetime,

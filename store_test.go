@@ -71,15 +71,15 @@ func (suite *MessageStoreTestSuite) TestMessageStore_Reset() {
 	require.Nil(t, suite.msgStore.Reset())
 
 	// Then the sender and target seqnums should be
-	assert.Equal(t, 1, suite.msgStore.NextSenderMsgSeqNum())
-	assert.Equal(t, 1, suite.msgStore.NextTargetMsgSeqNum())
+	assert.Equal(t, initMsgSeqNum, suite.msgStore.NextSenderMsgSeqNum())
+	assert.Equal(t, initMsgSeqNum, suite.msgStore.NextTargetMsgSeqNum())
 
 	// When the store is refreshed from its backing store
 	suite.msgStore.Refresh()
 
 	// Then the sender and target seqnums should still be
-	assert.Equal(t, 1, suite.msgStore.NextSenderMsgSeqNum())
-	assert.Equal(t, 1, suite.msgStore.NextTargetMsgSeqNum())
+	assert.Equal(t, initMsgSeqNum, suite.msgStore.NextSenderMsgSeqNum())
+	assert.Equal(t, initMsgSeqNum, suite.msgStore.NextTargetMsgSeqNum())
 }
 
 func (suite *MessageStoreTestSuite) TestMessageStore_SaveMessage_GetMessage() {
