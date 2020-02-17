@@ -144,7 +144,7 @@ func (s *LogonStateTestSuite) TestFixMsgInLogonResetSeqNum() {
 func (s *LogonStateTestSuite) TestFixMsgInLogonInitiateLogon() {
 	s.session.InitiateLogon = true
 	s.IncrNextSenderMsgSeqNum()
-	s.MessageFactory.seqNum = 1
+	s.MessageFactory.seqNum = initMsgSeqNum
 	s.IncrNextTargetMsgSeqNum()
 
 	logon := s.Logon()
@@ -311,14 +311,14 @@ func (s *LogonStateTestSuite) TestFixMsgInLogonSeqNumTooLow() {
 
 	logon := s.Logon()
 	logon.Body.SetField(tagHeartBtInt, FIXInt(32))
-	logon.Header.SetInt(tagMsgSeqNum, 1)
+	logon.Header.SetInt(tagMsgSeqNum, initMsgSeqNum)
 
 	s.MockApp.On("ToAdmin")
-	s.NextTargetMsgSeqNum(2)
+	s.NextTargetMsgSeqNum(initMsgSeqNum+1)
 	s.fixMsgIn(s.session, logon)
 
 	s.State(latentState{})
-	s.NextTargetMsgSeqNum(2)
+	s.NextTargetMsgSeqNum(initMsgSeqNum+1)
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 1)
 	msgBytesSent, ok := s.Receiver.LastMessage()

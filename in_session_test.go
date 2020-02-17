@@ -16,7 +16,8 @@ type InSessionTestSuite struct {
 func TestInSessionTestSuite(t *testing.T) {
 	s := new(InSessionTestSuite)
 	s.SessionSuiteRig.Init()
-	fmt.Printf("InSessionTestSuite0: %#v", *s)
+	_ = fmt.Printf
+	//fmt.Printf("InSessionTestSuite0: %#v", *s)
 	suite.Run(t, s)
 }
 
@@ -233,7 +234,7 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminExpectGapFill() {
 	s.FieldEquals(tagNewSeqNo, initMsgSeqNum-1+4, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
 
-	s.NextSenderMsgSeqNum(initMsgSeqNum-1+4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
 	s.State(inSession{})
 }
 
@@ -251,7 +252,7 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminThenApp() {
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 2)
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToApp", 1)
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
 
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToAdmin")
