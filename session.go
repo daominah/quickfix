@@ -279,13 +279,19 @@ func (s *session) dropAndSendInReplyTo(msg *Message, inReplyTo *Message) error {
 
 func (s *session) prepMessageForSend(msg *Message, inReplyTo *Message) (msgBytes []byte, err error) {
 	s.fillDefaultHeader(msg, inReplyTo)
-	seqNum := s.store.NextSenderMsgSeqNum()
-	msg.Header.SetField(tagMsgSeqNum, FIXInt(seqNum))
 
 	msgType, err := msg.Header.GetBytes(tagMsgType)
 	if err != nil {
 		return
 	}
+
+	seqNum := s.store.NextSenderMsgSeqNum()
+	// Các message thuộc lớp Session có sequence bằng sequence của message cuối
+	// cùng gửi thành công lên HNX.
+	if isAdminMessageType(msgType) {
+		seqNum -= 1
+	}
+	msg.Header.SetField(tagMsgSeqNum, FIXInt(seqNum))
 
 	if isAdminMessageType(msgType) {
 		s.application.ToAdmin(msg, s.sessionID)
