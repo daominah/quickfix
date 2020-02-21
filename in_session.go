@@ -18,7 +18,7 @@ func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 	}
 
 	switch {
-	case bytes.Equal(msgTypeLogon, msgType):
+	case bytes.Equal(msgTypeLogon, msgType): // isAdminMessage
 		if err := session.handleLogon(msg); err != nil {
 			if err := session.initiateLogoutInReplyTo("", msg); err != nil {
 				return handleStateError(session, err)
@@ -27,13 +27,13 @@ func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 		}
 
 		return state
-	case bytes.Equal(msgTypeLogout, msgType):
+	case bytes.Equal(msgTypeLogout, msgType): // isAdminMessage
 		return state.handleLogout(session, msg)
-	case bytes.Equal(msgTypeResendRequest, msgType):
+	case bytes.Equal(msgTypeResendRequest, msgType): // isAdminMessage
 		return state.handleResendRequest(session, msg)
-	case bytes.Equal(msgTypeSequenceReset, msgType):
+	case bytes.Equal(msgTypeSequenceReset, msgType): // isAdminMessage
 		return state.handleSequenceReset(session, msg)
-	case bytes.Equal(msgTypeTestRequest, msgType):
+	case bytes.Equal(msgTypeTestRequest, msgType): // isAdminMessage
 		return state.handleTestRequest(session, msg)
 	default:
 		if err := session.verify(msg); err != nil {
@@ -41,8 +41,10 @@ func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 		}
 	}
 
-	if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-		return handleStateError(session, err)
+	if !isAdminMessageType(msgType) {
+		if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
+			return handleStateError(session, err)
+		}
 	}
 
 	return state
@@ -87,10 +89,6 @@ func (state inSession) handleLogout(session *session, msg *Message) (nextState s
 		session.log.OnEvent("Received logout response")
 	}
 
-	if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-		session.logError(err)
-	}
-
 	if session.ResetOnLogout {
 		if err := session.dropAndReset(); err != nil {
 			session.logError(err)
@@ -116,9 +114,6 @@ func (state inSession) handleTestRequest(session *session, msg *Message) (nextSt
 		}
 	}
 
-	if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-		return handleStateError(session, err)
-	}
 	return state
 }
 
@@ -195,9 +190,6 @@ func (state inSession) handleResendRequest(session *session, msg *Message) (next
 		return state
 	}
 
-	if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-		return handleStateError(session, err)
-	}
 	return state
 }
 
@@ -304,9 +296,6 @@ func (state inSession) processReject(session *session, msg *Message, rej Message
 			return handleStateError(session, err)
 		}
 
-		if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-			return handleStateError(session, err)
-		}
 		return state
 	}
 }

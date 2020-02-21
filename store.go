@@ -8,7 +8,9 @@ const initMsgSeqNum = 0
 
 //The MessageStore interface provides methods to record and retrieve messages for resend purposes
 type MessageStore interface {
+	// NextSenderMsgSeqNum only reads
 	NextSenderMsgSeqNum() int
+	// NextTargetMsgSeqNum only reads
 	NextTargetMsgSeqNum() int
 
 	IncrNextSenderMsgSeqNum() error
@@ -41,8 +43,8 @@ type memoryStore struct {
 
 func newMemoryStore() *memoryStore {
 	return &memoryStore{
-		senderMsgSeqNum: initMsgSeqNum -1,
-		targetMsgSeqNum: initMsgSeqNum -1,
+		senderMsgSeqNum: initMsgSeqNum,
+		targetMsgSeqNum: initMsgSeqNum,
 	}
 }
 
@@ -78,8 +80,8 @@ func (store *memoryStore) CreationTime() time.Time {
 }
 
 func (store *memoryStore) Reset() error {
-	store.senderMsgSeqNum = initMsgSeqNum - 1
-	store.targetMsgSeqNum = initMsgSeqNum - 1
+	store.senderMsgSeqNum = initMsgSeqNum
+	store.targetMsgSeqNum = initMsgSeqNum
 	store.creationTime = time.Now()
 	store.messageMap = nil
 	return nil

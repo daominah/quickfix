@@ -286,7 +286,7 @@ func (s *session) prepMessageForSend(msg *Message, inReplyTo *Message) (msgBytes
 	}
 
 	seqNum := s.store.NextSenderMsgSeqNum()
-	// Các message thuộc lớp Session có sequence bằng sequence của message cuối
+	// Các message thuộc lớp admin có sequence bằng sequence của message cuối
 	// cùng gửi thành công lên HNX.
 	if isAdminMessageType(msgType) {
 		seqNum -= 1
@@ -321,19 +321,21 @@ func (s *session) prepMessageForSend(msg *Message, inReplyTo *Message) (msgBytes
 	}
 
 	msgBytes = msg.build()
-	err = s.persist(seqNum, msgBytes)
-
+	err = s.persist(seqNum, msgBytes, isAdminMessageType(msgType))
 	return
 }
 
-func (s *session) persist(seqNum int, msgBytes []byte) error {
+// persist will not increase MsgSeqNum if isAdminMsg
+func (s *session) persist(seqNum int, msgBytes []byte, isAdminMsg bool) error {
 	if !s.DisableMessagePersist {
 		if err := s.store.SaveMessage(seqNum, msgBytes); err != nil {
 			return err
 		}
 	}
-
-	return s.store.IncrNextSenderMsgSeqNum()
+	if !isAdminMsg { // HNX fucked up
+		return s.store.IncrNextSenderMsgSeqNum()
+	}
+	return nil
 }
 
 func (s *session) sendQueued() {
@@ -458,7 +460,7 @@ func (s *session) handleLogon(msg *Message) error {
 		return err
 	}
 
-	return s.store.IncrNextTargetMsgSeqNum()
+	return nil
 }
 
 func (s *session) initiateLogout(reason string) (err error) {
@@ -543,8 +545,12 @@ func (s *session) checkTargetTooLow(msg *Message) MessageRejectError {
 	if err != nil {
 		return err
 	}
-
-	if seqNum < s.store.NextTargetMsgSeqNum() {
+	expectedSeqNum := s.store.NextTargetMsgSeqNum()
+	msgType, _ := msg.MsgType()
+	if isAdminMessageType([]byte(msgType)) {
+		expectedSeqNum -= 1
+	}
+	if seqNum < expectedSeqNum {
 		return targetTooLow{ReceivedTarget: seqNum, ExpectedTarget: s.store.NextTargetMsgSeqNum()}
 	}
 
@@ -560,8 +566,12 @@ func (s *session) checkTargetTooHigh(msg *Message) MessageRejectError {
 	if err != nil {
 		return err
 	}
-
-	if seqNum > s.store.NextTargetMsgSeqNum() {
+	expectedSeqNum := s.store.NextTargetMsgSeqNum()
+	msgType, _ := msg.MsgType()
+	if isAdminMessageType([]byte(msgType)) {
+		expectedSeqNum -= 1
+	}
+	if seqNum > expectedSeqNum {
 		return targetTooHigh{ReceivedTarget: seqNum, ExpectedTarget: s.store.NextTargetMsgSeqNum()}
 	}
 

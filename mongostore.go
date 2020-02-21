@@ -6,7 +6,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-
+	"github.com/pkg/errors"
 	"github.com/quickfixgo/quickfix/config"
 )
 
@@ -76,8 +76,19 @@ func newMongoStore(sessionID SessionID, mongoURL string, mongoDatabase string, m
 	return
 }
 
-func generateMessageFilter(s *SessionID) (messageFilter *mongoQuickFixEntryData) {
-	messageFilter = &mongoQuickFixEntryData{
+type mongoFilter struct {
+	BeginString      string `bson:"begin_string"`
+	SessionQualifier string `bson:"session_qualifier"`
+	SenderCompID     string `bson:"sender_comp_id"`
+	SenderSubID      string `bson:"sender_sub_id"`
+	SenderLocID      string `bson:"sender_loc_id"`
+	TargetCompID     string `bson:"target_comp_id"`
+	TargetSubID      string `bson:"target_sub_id"`
+	TargetLocID      string `bson:"target_loc_id"`
+}
+
+func generateMessageFilter(s *SessionID) (messageFilter *mongoFilter) {
+	messageFilter = &mongoFilter{
 		BeginString:      s.BeginString,
 		SessionQualifier: s.Qualifier,
 		SenderCompID:     s.SenderCompID,
@@ -90,14 +101,34 @@ func generateMessageFilter(s *SessionID) (messageFilter *mongoQuickFixEntryData)
 	return
 }
 
+func generateEntryFromFilter(s mongoFilter) *mongoQuickFixEntryData {
+	return &mongoQuickFixEntryData{
+		BeginString:      s.BeginString,
+		SessionQualifier: s.SessionQualifier,
+		SenderCompID:     s.SenderCompID,
+		SenderSubID:      s.SenderSubID,
+		SenderLocID:      s.SenderLocID,
+		TargetCompID:     s.TargetCompID,
+		TargetSubID:      s.TargetSubID,
+		TargetLocID:      s.TargetLocID,
+	}
+}
+
+func generateQuickFixEntry(s *SessionID) *mongoQuickFixEntryData {
+	return generateEntryFromFilter(*generateMessageFilter(s))
+}
+
 type mongoQuickFixEntryData struct {
 	//Message specific data
-	Msgseq  int    `bson:"msgseq,omitempty"`
-	Message []byte `bson:"message,omitempty"`
+	Msgseq  int    `bson:"msgseq"`
+	// Message data type can be changed to []byte for improving performance
+	// ([]byte will skip convert string <=> []byte in save and get msg, but
+	// hard for developer to read in robomongo)
+	Message string `bson:"message,omitempty"`
 	//Session specific data
 	CreationTime   time.Time `bson:"creation_time,omitempty"`
-	IncomingSeqNum int       `bson:"incoming_seq_num,omitempty"`
-	OutgoingSeqNum int       `bson:"outgoing_seq_num,omitempty"`
+	IncomingSeqNum int       `bson:"incoming_seq_num"`
+	OutgoingSeqNum int       `bson:"outgoing_seq_num"`
 	//Indexed data
 	BeginString      string `bson:"begin_string"`
 	SessionQualifier string `bson:"session_qualifier"`
@@ -122,7 +153,7 @@ func (store *mongoStore) Reset() error {
 		return err
 	}
 
-	sessionUpdate := generateMessageFilter(&store.sessionID)
+	sessionUpdate := generateQuickFixEntry(&store.sessionID)
 	sessionUpdate.CreationTime = store.cache.CreationTime()
 	sessionUpdate.IncomingSeqNum = store.cache.NextTargetMsgSeqNum()
 	sessionUpdate.OutgoingSeqNum = store.cache.NextSenderMsgSeqNum()
@@ -154,10 +185,11 @@ func (store *mongoStore) populateCache() (err error) {
 		}
 	} else if err == nil && cnt == 0 {
 		// session record not found, create it
-		msgFilter.CreationTime = store.cache.creationTime
-		msgFilter.IncomingSeqNum = store.cache.NextTargetMsgSeqNum()
-		msgFilter.OutgoingSeqNum = store.cache.NextSenderMsgSeqNum()
-		err = store.db.DB(store.mongoDatabase).C(store.sessionsCollection).Insert(msgFilter)
+		newEntry := generateEntryFromFilter(*msgFilter)
+		newEntry.CreationTime = store.cache.creationTime
+		newEntry.IncomingSeqNum = store.cache.NextTargetMsgSeqNum()
+		newEntry.OutgoingSeqNum = store.cache.NextSenderMsgSeqNum()
+		err = store.db.DB(store.mongoDatabase).C(store.sessionsCollection).Insert(newEntry)
 	}
 	return
 }
@@ -175,12 +207,12 @@ func (store *mongoStore) NextTargetMsgSeqNum() int {
 // SetNextSenderMsgSeqNum sets the next MsgSeqNum that will be sent
 func (store *mongoStore) SetNextSenderMsgSeqNum(next int) error {
 	msgFilter := generateMessageFilter(&store.sessionID)
-	sessionUpdate := generateMessageFilter(&store.sessionID)
+	sessionUpdate := generateQuickFixEntry(&store.sessionID)
 	sessionUpdate.IncomingSeqNum = store.cache.NextTargetMsgSeqNum()
 	sessionUpdate.OutgoingSeqNum = next
 	sessionUpdate.CreationTime = store.cache.CreationTime()
 	if err := store.db.DB(store.mongoDatabase).C(store.sessionsCollection).Update(msgFilter, sessionUpdate); err != nil {
-		return err
+		return errors.Errorf("error when mongoStore Update: %v", err)
 	}
 	return store.cache.SetNextSenderMsgSeqNum(next)
 }
@@ -188,7 +220,7 @@ func (store *mongoStore) SetNextSenderMsgSeqNum(next int) error {
 // SetNextTargetMsgSeqNum sets the next MsgSeqNum that should be received
 func (store *mongoStore) SetNextTargetMsgSeqNum(next int) error {
 	msgFilter := generateMessageFilter(&store.sessionID)
-	sessionUpdate := generateMessageFilter(&store.sessionID)
+	sessionUpdate := generateQuickFixEntry(&store.sessionID)
 	sessionUpdate.IncomingSeqNum = next
 	sessionUpdate.OutgoingSeqNum = store.cache.NextSenderMsgSeqNum()
 	sessionUpdate.CreationTime = store.cache.CreationTime()
@@ -216,9 +248,9 @@ func (store *mongoStore) CreationTime() time.Time {
 }
 
 func (store *mongoStore) SaveMessage(seqNum int, msg []byte) (err error) {
-	msgFilter := generateMessageFilter(&store.sessionID)
+	msgFilter := generateQuickFixEntry(&store.sessionID)
 	msgFilter.Msgseq = seqNum
-	msgFilter.Message = msg
+	msgFilter.Message = string(msg)
 	err = store.db.DB(store.mongoDatabase).C(store.messagesCollection).Insert(msgFilter)
 	return
 }
@@ -242,8 +274,9 @@ func (store *mongoStore) GetMessages(beginSeqNum, endSeqNum int) (msgs [][]byte,
 	}
 
 	iter := store.db.DB(store.mongoDatabase).C(store.messagesCollection).Find(seqFilter).Sort("msgseq").Iter()
-	for iter.Next(msgFilter) {
-		msgs = append(msgs, msgFilter.Message)
+	var row mongoQuickFixEntryData
+	for iter.Next(row) {
+		msgs = append(msgs, []byte(row.Message))
 	}
 	err = iter.Close()
 	return

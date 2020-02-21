@@ -66,8 +66,11 @@ func shutdownWithReason(session *session, msg *Message, incrNextTargetMsgSeqNum 
 	}
 
 	if incrNextTargetMsgSeqNum {
-		if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
-			session.logError(err)
+		msgType, _ := msg.MsgType()
+		if !isAdminMessageType([]byte(msgType)) {
+			if err := session.store.IncrNextTargetMsgSeqNum(); err != nil {
+				session.logError(err)
+			}
 		}
 	}
 
