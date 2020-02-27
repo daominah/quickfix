@@ -220,7 +220,8 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminExpectGapFill() {
 	s.LastToAdminMessageSent()
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 3)
-	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
+	// because admin msgs do not incr msgSeqNum
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 1)
 
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToAdmin")
@@ -231,10 +232,10 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminExpectGapFill() {
 	s.MessageType(string(msgTypeSequenceReset), s.MockApp.lastToAdmin)
 	s.FieldEquals(tagMsgSeqNum, initMsgSeqNum, s.MockApp.lastToAdmin.Header)
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToAdmin.Header)
-	s.FieldEquals(tagNewSeqNo, initMsgSeqNum-1+4, s.MockApp.lastToAdmin.Body)
+	s.FieldEquals(tagNewSeqNo, initMsgSeqNum+1, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
 
-	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 1)
 	s.State(inSession{})
 }
 
@@ -252,12 +253,12 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminThenApp() {
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 2)
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToApp", 1)
-	s.NextSenderMsgSeqNum(initMsgSeqNum - 1 + 4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 2)
 
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToAdmin")
 	s.MockApp.On("ToApp").Return(nil)
-	s.fixMsgIn(s.session, s.ResendRequest(1))
+	s.fixMsgIn(s.session, s.ResendRequest(initMsgSeqNum))
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 3)
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToApp", 2)
@@ -268,7 +269,6 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminThenApp() {
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToAdmin.Header)
 	s.FieldEquals(tagNewSeqNo, 3, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
-
 	s.LastToAppMessageSent()
 	s.MessageType("D", s.MockApp.lastToApp)
 	s.FieldEquals(tagMsgSeqNum, 3, s.MockApp.lastToApp.Header)
