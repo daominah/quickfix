@@ -120,7 +120,9 @@ func (m *MessageFactory) SetNextSeqNum(next int) {
 }
 
 func (m *MessageFactory) buildMessage(msgType string) *Message {
-	m.seqNum++
+	if !isAdminMessageType([]byte(msgType)) {
+		m.seqNum++
+	}
 	msg := NewMessage()
 	msg.Header.
 		SetField(tagBeginString, FIXString(string(BeginStringFIX42))).

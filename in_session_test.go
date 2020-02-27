@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/daominah/gomicrokit/log"
 	"github.com/quickfixgo/quickfix/internal"
 	"github.com/stretchr/testify/suite"
 )
@@ -43,13 +44,13 @@ func (s *InSessionTestSuite) TestLogout() {
 
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeLogout), s.MockApp.lastToAdmin)
-	s.NextTargetMsgSeqNum(2)
-	s.NextSenderMsgSeqNum(2)
+	s.NextTargetMsgSeqNum(initMsgSeqNum + 1)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 1)
 }
 
 func (s *InSessionTestSuite) TestLogoutEnableLastMsgSeqNumProcessed() {
 	s.session.EnableLastMsgSeqNumProcessed = true
-
+	s.log=screenLog{}
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToAdmin")
 	s.MockApp.On("OnLogout")
@@ -80,8 +81,8 @@ func (s *InSessionTestSuite) TestLogoutResetOnLogout() {
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeLogout), s.MockApp.lastToAdmin)
 
-	s.NextTargetMsgSeqNum(initMsgSeqNum)
-	s.NextSenderMsgSeqNum(initMsgSeqNum)
+	s.NextTargetMsgSeqNum(initMsgSeqNum+1)
+	s.NextSenderMsgSeqNum(initMsgSeqNum+1)
 	s.NoMessageQueued()
 }
 
@@ -265,16 +266,16 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestAllAdminThenApp() {
 
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeSequenceReset), s.MockApp.lastToAdmin)
-	s.FieldEquals(tagMsgSeqNum, 1, s.MockApp.lastToAdmin.Header)
+	s.FieldEquals(tagMsgSeqNum, initMsgSeqNum, s.MockApp.lastToAdmin.Header)
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToAdmin.Header)
-	s.FieldEquals(tagNewSeqNo, 3, s.MockApp.lastToAdmin.Body)
+	s.FieldEquals(tagNewSeqNo, initMsgSeqNum+1, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
 	s.LastToAppMessageSent()
 	s.MessageType("D", s.MockApp.lastToApp)
-	s.FieldEquals(tagMsgSeqNum, 3, s.MockApp.lastToApp.Header)
+	s.FieldEquals(tagMsgSeqNum, initMsgSeqNum+1, s.MockApp.lastToApp.Header)
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToApp.Header)
 
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 2)
 	s.State(inSession{})
 }
 
@@ -307,6 +308,8 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestNoMessagePersist() {
 }
 
 func (s *InSessionTestSuite) TestFIXMsgInResendRequestDoNotSendApp() {
+	//s.log = screenLog{}
+	_ = log.Printf
 	s.MockApp.On("ToAdmin")
 	s.session.Timeout(s.session, internal.NeedHeartbeat)
 	s.LastToAdminMessageSent()
@@ -320,28 +323,27 @@ func (s *InSessionTestSuite) TestFIXMsgInResendRequestDoNotSendApp() {
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 2)
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToApp", 1)
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 2)
 
 	//NOTE: a cheat here, need to reset mock
 	s.MockApp = MockApp{}
 	s.MockApp.On("FromAdmin").Return(nil)
 	s.MockApp.On("ToApp").Return(ErrDoNotSend)
 	s.MockApp.On("ToAdmin")
-	s.fixMsgIn(s.session, s.ResendRequest(1))
+	s.fixMsgIn(s.session, s.ResendRequest(initMsgSeqNum))
 
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToAdmin", 1)
 	s.MockApp.AssertNumberOfCalls(s.T(), "ToApp", 1)
-
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeSequenceReset), s.MockApp.lastToAdmin)
-	s.FieldEquals(tagMsgSeqNum, 1, s.MockApp.lastToAdmin.Header)
+	s.FieldEquals(tagMsgSeqNum, initMsgSeqNum, s.MockApp.lastToAdmin.Header)
 	s.FieldEquals(tagPossDupFlag, true, s.MockApp.lastToAdmin.Header)
-	s.FieldEquals(tagNewSeqNo, 4, s.MockApp.lastToAdmin.Body)
+	s.FieldEquals(tagNewSeqNo, initMsgSeqNum+2, s.MockApp.lastToAdmin.Body)
 	s.FieldEquals(tagGapFillFlag, true, s.MockApp.lastToAdmin.Body)
 
 	s.NoMessageSent()
 
-	s.NextSenderMsgSeqNum(4)
+	s.NextSenderMsgSeqNum(initMsgSeqNum + 2)
 	s.State(inSession{})
 }
 
@@ -353,7 +355,7 @@ func (s *InSessionTestSuite) TestFIXMsgInTargetTooLow() {
 	s.MockApp.AssertExpectations(s.T())
 	s.LastToAdminMessageSent()
 	s.MessageType(string(msgTypeLogout), s.MockApp.lastToAdmin)
-	s.FieldEquals(tagText, "MsgSeqNum too low, expecting 2 but received 1", s.MockApp.lastToAdmin.Body)
+	s.FieldEquals(tagText, fmt.Sprintf("MsgSeqNum too low, expecting 2 but received %v", initMsgSeqNum), s.MockApp.lastToAdmin.Body)
 	s.State(logoutState{})
 }
 

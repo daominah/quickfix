@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"time"
 
+	"github.com/daominah/gomicrokit/log"
 	"github.com/quickfixgo/quickfix/internal"
 )
 
@@ -12,6 +13,8 @@ type inSession struct{ loggedOn }
 func (state inSession) String() string { return "In Session" }
 
 func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
+	_ = log.Printf
+	//log.Printf("inSession FixMsgIn: %v", msg.String())
 	msgType, err := msg.Header.GetBytes(tagMsgType)
 	if err != nil {
 		return handleStateError(session, err)
@@ -209,6 +212,7 @@ func (state inSession) resendMessages(session *session, beginSeqNo, endSeqNo int
 	nextSeqNum := seqNum
 	msg := NewMessage()
 	for _, msgBytes := range msgs {
+		//log.Debugf("resendMessages GetMessages: %s", msgBytes)
 		_ = ParseMessageWithDataDictionary(msg, bytes.NewBuffer(msgBytes), session.transportDataDictionary, session.appDataDictionary)
 		msgType, _ := msg.Header.GetBytes(tagMsgType)
 		sentMessageSeqNum, _ := msg.Header.GetInt(tagMsgSeqNum)

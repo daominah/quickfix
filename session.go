@@ -551,13 +551,13 @@ func (s *session) checkTargetTooLow(msg *Message) MessageRejectError {
 		expectedSeqNum -= 1
 	}
 	if seqNum < expectedSeqNum {
-		return targetTooLow{ReceivedTarget: seqNum, ExpectedTarget: s.store.NextTargetMsgSeqNum()}
+		return targetTooLow{ReceivedTarget: seqNum, ExpectedTarget: expectedSeqNum}
 	}
 
 	return nil
 }
 
-func (s *session) checkTargetTooHigh(msg *Message) MessageRejectError {
+func (s *session)  checkTargetTooHigh(msg *Message) MessageRejectError {
 	if !msg.Header.Has(tagMsgSeqNum) {
 		return RequiredTagMissing(tagMsgSeqNum)
 	}
@@ -572,7 +572,7 @@ func (s *session) checkTargetTooHigh(msg *Message) MessageRejectError {
 		expectedSeqNum -= 1
 	}
 	if seqNum > expectedSeqNum {
-		return targetTooHigh{ReceivedTarget: seqNum, ExpectedTarget: s.store.NextTargetMsgSeqNum()}
+		return targetTooHigh{ReceivedTarget: seqNum, ExpectedTarget: expectedSeqNum}
 	}
 
 	return nil

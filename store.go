@@ -38,7 +38,8 @@ type MessageStoreFactory interface {
 type memoryStore struct {
 	senderMsgSeqNum, targetMsgSeqNum int
 	creationTime                     time.Time
-	messageMap                       map[int][]byte
+	// Difference HNX messages can have same seqNum CON CAC
+	messageMap                       map[int][][]byte
 }
 
 func newMemoryStore() *memoryStore {
@@ -99,18 +100,18 @@ func (store *memoryStore) Close() error {
 
 func (store *memoryStore) SaveMessage(seqNum int, msg []byte) error {
 	if store.messageMap == nil {
-		store.messageMap = make(map[int][]byte)
+		store.messageMap = make(map[int][][]byte)
 	}
 
-	store.messageMap[seqNum] = msg
+	store.messageMap[seqNum] =  append(store.messageMap[seqNum], msg)
 	return nil
 }
 
 func (store *memoryStore) GetMessages(beginSeqNum, endSeqNum int) ([][]byte, error) {
 	var msgs [][]byte
 	for seqNum := beginSeqNum; seqNum <= endSeqNum; seqNum++ {
-		if m, ok := store.messageMap[seqNum]; ok {
-			msgs = append(msgs, m)
+		if ms, ok := store.messageMap[seqNum]; ok {
+			msgs = append(msgs, ms...)
 		}
 	}
 	return msgs, nil

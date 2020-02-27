@@ -69,7 +69,7 @@ func (s *LogonStateTestSuite) TestFixMsgInNotLogon() {
 
 func (s *LogonStateTestSuite) TestFixMsgInLogon() {
 	s.IncrNextSenderMsgSeqNum()
-	s.MessageFactory.seqNum = 1
+	s.MessageFactory.seqNum = initMsgSeqNum
 	s.IncrNextTargetMsgSeqNum()
 
 	logon := s.Logon()
