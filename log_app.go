@@ -12,28 +12,35 @@ type ZLogger struct {
 }
 
 func (l ZLogger) OnIncoming(msg []byte) {
-	log.Debugf("FIXLog incoming %v: %s", l.sessionID, msg)
+	log.Debugf("incoming %v: %s", l.sessionID, msg)
 }
 func (l ZLogger) OnOutgoing(msg []byte) {
-	log.Debugf("FIXLog outgoing %v: %s", l.sessionID, msg)
+	log.Debugf("outgoing %v: %s", l.sessionID, msg)
 }
 func (l ZLogger) OnEvent(event string) {
-	log.Debugf("FIXLog event %v: %v", l.sessionID, event)
+	log.Debugf("event %v: %v", l.sessionID, event)
 }
 func (l ZLogger) OnEventf(eventTemplate string, args ...interface{}) {
 	args = append([]interface{}{l.sessionID}, args...)
-	log.Debugf("FIXLog event %v: "+eventTemplate, args...)
+	log.Debugf("event %v: "+eventTemplate, args...)
 }
 
 // ZLogFactory implements the LogFactory by using the `gomicrokit/log`
-type ZLogFactory struct{}
+type ZLogFactory struct {
+	isLogSessionID bool
+}
 
-func NewZLogFactory() *ZLogFactory { return &ZLogFactory{} }
+func NewZLogFactory(isLogSessionID bool) *ZLogFactory {
+	return &ZLogFactory{isLogSessionID: isLogSessionID}
+}
 func (f ZLogFactory) Create() (Log, error) {
 	return ZLogger{sessionID: ""}, nil
 }
 func (f ZLogFactory) CreateSessionLog(sessionID SessionID) (Log, error) {
-	return ZLogger{sessionID: sessionID.String()}, nil
+	if f.isLogSessionID {
+		return ZLogger{sessionID: sessionID.String()}, nil
+	}
+	return ZLogger{sessionID: ""}, nil
 }
 
 // LogApp implements Application interface.
