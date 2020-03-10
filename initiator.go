@@ -3,6 +3,7 @@ package quickfix
 import (
 	"bufio"
 	"crypto/tls"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -77,13 +78,13 @@ func NewInitiator(app Application, storeFactory MessageStoreFactory, appSettings
 	var err error
 	i.globalLog, err = logFactory.Create()
 	if err != nil {
-		return i, err
+		return i, fmt.Errorf("error when logFactory_Create: %v", err)
 	}
 
 	for sessionID, s := range i.sessionSettings {
 		session, err := i.createSession(sessionID, storeFactory, s, logFactory, app)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error when createSession: %v", err)
 		}
 
 		i.sessions[sessionID] = session

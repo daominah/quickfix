@@ -25,4 +25,7 @@ type SessionSettings struct {
 	LogoutTimeout        time.Duration
 	LogonTimeout         time.Duration
 	SocketConnectAddress []string
+
+	// HNXVersion is specific to HaNoiStockExchange
+	HNXVersion string
 }

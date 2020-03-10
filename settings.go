@@ -2,11 +2,12 @@ package quickfix
 
 import (
 	"bufio"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
 	"regexp"
 
+	"github.com/daominah/gomicrokit/log"
 	"github.com/quickfixgo/quickfix/config"
 )
 
@@ -127,6 +128,14 @@ func ParseSettings(reader io.Reader) (*Settings, error) {
 	}
 	_, err := s.AddSession(settings)
 
+	// debug
+	beauty, _ := json.MarshalIndent(s.globalSettings.settings, "", "	")
+	log.Infof("FIX setting: %s", beauty)
+	for _, v := range s.sessionSettings {
+		beauty, _ := json.MarshalIndent(v.settings, "", "	")
+		log.Infof("FIX sessionSettings: %s", beauty)
+	}
+
 	return s, err
 }
 
@@ -163,7 +172,8 @@ func (s *Settings) AddSession(sessionSettings *SessionSettings) (SessionID, erro
 	case BeginStringFIX44:
 	case BeginStringFIXT11:
 	default:
-		return sessionID, errors.New("BeginString must be FIX.4.0 to FIX.4.4 or FIXT.1.1")
+		// return sessionID, errors.New("BeginString must be FIX.4.0 to FIX.4.4 or FIXT.1.1")
+		// log.Infof("unusual BeginString: %v", sessionID.BeginString)
 	}
 
 	if _, dup := s.sessionSettings[sessionID]; dup {

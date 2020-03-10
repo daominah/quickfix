@@ -2,6 +2,7 @@ package quickfix
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -52,11 +53,11 @@ func (f sessionFactory) createSession(
 ) (session *session, err error) {
 
 	if session, err = f.newSession(sessionID, storeFactory, settings, logFactory, application); err != nil {
-		return
+		return nil, fmt.Errorf("error when newSession: %v", err)
 	}
 
 	if err = registerSession(session); err != nil {
-		return
+		return nil, fmt.Errorf("error when registerSession: %v", err)
 	}
 	application.OnCreate(session.sessionID)
 	session.log.OnEvent("Created session")
@@ -282,6 +283,10 @@ func (f sessionFactory) newSession(
 		s.DisableMessagePersist = !persistMessages
 	}
 
+	if settings.HasSetting(config.HNXVersion) {
+		s.HNXVersion, _ = settings.Setting(config.HNXVersion)
+	}
+
 	if f.BuildInitiators {
 		if err = f.buildInitiatorSettings(s, settings); err != nil {
 			return
@@ -289,11 +294,11 @@ func (f sessionFactory) newSession(
 	}
 
 	if s.log, err = logFactory.CreateSessionLog(s.sessionID); err != nil {
-		return
+		return nil, fmt.Errorf("error when CreateSessionLog: %v", err)
 	}
 
 	if s.store, err = storeFactory.Create(s.sessionID); err != nil {
-		return
+		return nil, fmt.Errorf("error when storeFactory_Create: %v", err)
 	}
 
 	s.sessionEvent = make(chan internal.Event)

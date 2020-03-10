@@ -163,6 +163,10 @@ func (s *session) sendLogonInReplyTo(setResetSeqNum bool, inReplyTo *Message) er
 		logon.Body.SetField(tagDefaultApplVerID, FIXString(s.DefaultApplVerID))
 	}
 
+	if s.HNXVersion != "" {
+		logon.Body.SetField(552, FIXString(s.HNXVersion))
+	}
+
 	if err := s.dropAndSendInReplyTo(logon, inReplyTo); err != nil {
 		return err
 	}
