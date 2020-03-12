@@ -1,6 +1,10 @@
 package quickfix
 
-import "io"
+import (
+	"io"
+
+	zlog "github.com/daominah/gomicrokit/log"
+)
 
 func writeLoop(connection io.Writer, messageOut chan []byte, log Log) {
 	for {
@@ -9,9 +13,11 @@ func writeLoop(connection io.Writer, messageOut chan []byte, log Log) {
 			return
 		}
 
-		if _, err := connection.Write(msg); err != nil {
+		_, err := connection.Write(msg)
+		if err != nil {
 			log.OnEvent(err.Error())
 		}
+		zlog.Debugf("conn sent: err %v, msg: %s", err, msg)
 	}
 }
 
