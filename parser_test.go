@@ -106,7 +106,9 @@ func (s *ParserSuite) TestReadEOF() {
 		s.Nil(bytes)
 
 		s.NotNil(err)
-		s.Equal("EOF", err.Error())
+		if !strings.Contains(err.Error(), "EOF") {
+			s.T().Error(err)
+		}
 	}
 }
 
@@ -170,4 +172,14 @@ func (s *ParserSuite) TestReadMessageGrowBuffer() {
 		s.Equal(tc.expectedBufferCap, cap(s.parser.buffer))
 		s.Equal(tc.expectedBufferLen, len(s.parser.buffer))
 	}
+}
+
+func TestParseHNXInfoGateMsg(t *testing.T) {
+	stream := "spam8=HNX.TDS.19=4935=A49=HNX52=20200312-09:44:0558=Accept login"
+	parser := newParser(strings.NewReader(stream))
+	msg, err := parser.ReadMessage()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Errorf("msg.Bytes: %s", msg.Bytes())
 }

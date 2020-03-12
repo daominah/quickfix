@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/quickfixgo/quickfix/internal"
+	"fmt"
 )
 
 const (
@@ -59,6 +60,7 @@ func (p *parser) findIndex(delim []byte) (int, error) {
 	return p.findIndexAfterOffset(0, delim)
 }
 
+// findIndexAfterOffset finds from the offset character
 func (p *parser) findIndexAfterOffset(offset int, delim []byte) (int, error) {
 	for {
 		if offset > len(p.buffer) {
@@ -81,6 +83,7 @@ func (p *parser) findIndexAfterOffset(offset int, delim []byte) (int, error) {
 	}
 }
 
+// findStart returns index of FIXTagBeginString (8=)
 func (p *parser) findStart() (int, error) {
 	return p.findIndex([]byte("8="))
 }
@@ -99,6 +102,9 @@ func (p *parser) findEndAfterOffset(offset int) (int, error) {
 	return index + 1, nil
 }
 
+// jumpLength returns an index base on value of FIXTagBodyLength (9=).
+// In case of HNX InfoGate msg (without FIXTagCheckSum), this func returns
+//
 func (p *parser) jumpLength() (int, error) {
 	lengthIndex, err := p.findIndex([]byte("9="))
 	if err != nil {
@@ -131,18 +137,18 @@ func (p *parser) jumpLength() (int, error) {
 func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
 	start, err := p.findStart()
 	if err != nil {
-		return
+		return nil, fmt.Errorf("error when findStart: %v", err)
 	}
 	p.buffer = p.buffer[start:]
 
 	index, err := p.jumpLength()
 	if err != nil {
-		return
+		return nil, fmt.Errorf("error when jumpLength: %v", err)
 	}
 
 	index, err = p.findEndAfterOffset(index)
 	if err != nil {
-		return
+		return nil, fmt.Errorf("error when findEndAfterOffset: %v", err)
 	}
 
 	msgBytes = bufferPool.Get()
