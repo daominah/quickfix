@@ -28,6 +28,8 @@ func newParser(reader io.Reader) *parser {
 	return &parser{reader: reader}
 }
 
+const errFromIOReader = "error from IOReader"
+
 func (p *parser) readMore() (int, error) {
 	if len(p.buffer) == cap(p.buffer) {
 		var newBuffer []byte
@@ -54,7 +56,10 @@ func (p *parser) readMore() (int, error) {
 	n, e := p.reader.Read(p.buffer[len(p.buffer):cap(p.buffer)])
 	p.lastRead = time.Now()
 	p.buffer = p.buffer[:len(p.buffer)+n]
-	return n, e
+	if e != nil {
+		return n, fmt.Errorf("%v: %v", errFromIOReader, e)
+	}
+	return n, nil
 }
 
 func (p *parser) findIndex(delim []byte) (int, error) {
@@ -136,7 +141,6 @@ func (p *parser) jumpLength() (int, error) {
 }
 
 func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
-	log.Debugf("parser_ReadMessage cp0")
 	start, err := p.findStart()
 	if err != nil {
 		return nil, fmt.Errorf("error when findStart: %v", err)
@@ -157,13 +161,20 @@ func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
 		}
 	}
 
+	if index > len(p.buffer) {
+		_ = log.Debugf
+		currentBuff := make([]byte, len(p.buffer))
+		copy(currentBuff, p.buffer)
+		log.Debugf("error not received full FIXMsg: %s", currentBuff)
+		_, ioErr := p.readMore()
+		if ioErr != nil {
+			return nil, ioErr
+		}
+		return nil, errors.New("error not received full FIXMsg")
+	}
+
 	msgBytes = bufferPool.Get()
 	msgBytes.Reset()
-	if true { // TODO: log performance?
-		cloned := make([]byte, len(p.buffer[:index]))
-		copy(cloned, p.buffer[:index])
-		log.Debugf("parser_ReadMessage: err: %v, msg: %s", err, cloned)
-	}
 	msgBytes.Write(p.buffer[:index])
 	p.buffer = p.buffer[index:]
 

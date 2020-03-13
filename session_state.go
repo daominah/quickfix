@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/quickfixgo/quickfix/internal"
+	"github.com/daominah/gomicrokit/log"
 )
 
 type stateMachine struct {
@@ -48,7 +49,12 @@ func (sm *stateMachine) Connect(session *session) {
 
 	sm.setState(session, logonState{})
 	// Fire logon timeout event after the pre-configured delay period.
-	time.AfterFunc(session.LogonTimeout, func() { session.sessionEvent <- internal.LogonTimeout })
+	// TODO: read this
+	calledTime := time.Now()
+	time.AfterFunc(session.LogonTimeout, func() {
+		session.sessionEvent <- internal.LogonTimeout
+		log.Debugf("call LogonTimeout from %v fired", calledTime)
+	})
 }
 
 func (sm *stateMachine) Stop(session *session) {

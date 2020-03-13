@@ -2,6 +2,7 @@ package quickfix
 
 import (
 	"io"
+	"strings"
 
 	zlog "github.com/daominah/gomicrokit/log"
 )
@@ -26,10 +27,14 @@ func readLoop(parser *parser, msgIn chan fixIn) {
 
 	for {
 		msg, err := parser.ReadMessage()
-		if err != nil {
-			zlog.Infof("readLoop err: %v", err)
-			return
+		if err == nil {
+			msgIn <- fixIn{msg, parser.lastRead}
 		}
-		msgIn <- fixIn{msg, parser.lastRead}
+		if err != nil {
+			if strings.Contains(err.Error(), errFromIOReader) {
+				zlog.Infof("readLoop returned, err: %v", err)
+				return
+			}
+		}
 	}
 }

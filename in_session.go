@@ -14,7 +14,7 @@ func (state inSession) String() string { return "In Session" }
 
 func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 	_ = log.Printf
-	//log.Printf("inSession FixMsgIn: %v", msg.String())
+	//log.Debugf("inSession FixMsgIn: %v", msg.String())
 	msgType, err := msg.Header.GetBytes(tagMsgType)
 	if err != nil {
 		return handleStateError(session, err)
@@ -39,7 +39,11 @@ func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 	case bytes.Equal(msgTypeTestRequest, msgType): // isAdminMessage
 		return state.handleTestRequest(session, msg)
 	default:
-		if err := session.verify(msg); err != nil {
+		var err MessageRejectError
+		if !IsHNXInfoGateProtocol {
+			err = session.verify(msg)
+		}
+		if err != nil {
 			return state.processReject(session, msg, err)
 		}
 	}
