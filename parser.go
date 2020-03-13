@@ -159,8 +159,11 @@ func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
 
 	msgBytes = bufferPool.Get()
 	msgBytes.Reset()
-	// TODO: concurrent test
-	log.Debugf("parser_ReadMessage: err: %v, msg: %s", err, p.buffer[:index])
+	if true { // TODO: log performance?
+		cloned := make([]byte, len(p.buffer[:index]))
+		copy(cloned, p.buffer[:index])
+		log.Debugf("parser_ReadMessage: err: %v, msg: %s", err, cloned)
+	}
 	msgBytes.Write(p.buffer[:index])
 	p.buffer = p.buffer[index:]
 

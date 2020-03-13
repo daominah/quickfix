@@ -32,13 +32,13 @@ type session struct {
 	application  Application
 	validator
 	stateMachine
-	stateTimer *internal.EventTimer
-	peerTimer  *internal.EventTimer
-	sentReset  bool
+	stateTimer   *internal.EventTimer
+	peerTimer    *internal.EventTimer
+	sentReset    bool
 
 	targetDefaultApplVerID string
 
-	admin chan interface{}
+	admin                   chan interface{}
 	internal.SessionSettings
 	transportDataDictionary *datadictionary.DataDictionary
 	appDataDictionary       *datadictionary.DataDictionary
@@ -424,6 +424,14 @@ func (s *session) handleLogon(msg *Message) error {
 		}
 	}
 
+	if IsHNXInfoGateProtocol { // HNXInfoGate ignores many fields
+		s.fromCallback(msg)
+		s.sentReset = false
+		s.peerTimer.Reset(time.Duration(float64(1.2) * float64(s.HeartBtInt)))
+		s.application.OnLogon(s.sessionID)
+		return nil
+	}
+
 	var resetSeqNumFlag FIXBoolean
 	if err := msg.Body.GetField(tagResetSeqNumFlag, &resetSeqNumFlag); err == nil {
 		if resetSeqNumFlag {
@@ -481,18 +489,22 @@ func (s *session) initiateLogoutInReplyTo(reason string, inReplyTo *Message) (er
 	return
 }
 
+// verifySelect includes a s_fromCallback(msg)
 func (s *session) verify(msg *Message) MessageRejectError {
 	return s.verifySelect(msg, true, true)
 }
 
+// verifySelect includes a s_fromCallback(msg)
 func (s *session) verifyIgnoreSeqNumTooHigh(msg *Message) MessageRejectError {
 	return s.verifySelect(msg, false, true)
 }
 
+// verifySelect includes a s_fromCallback(msg)
 func (s *session) verifyIgnoreSeqNumTooHighOrLow(msg *Message) MessageRejectError {
 	return s.verifySelect(msg, false, false)
 }
 
+// verifySelect includes a s_fromCallback(msg)
 func (s *session) verifySelect(msg *Message, checkTooHigh bool, checkTooLow bool) MessageRejectError {
 	if reject := s.checkBeginString(msg); reject != nil {
 		return reject
@@ -561,7 +573,7 @@ func (s *session) checkTargetTooLow(msg *Message) MessageRejectError {
 	return nil
 }
 
-func (s *session)  checkTargetTooHigh(msg *Message) MessageRejectError {
+func (s *session) checkTargetTooHigh(msg *Message) MessageRejectError {
 	if !msg.Header.Has(tagMsgSeqNum) {
 		return RequiredTagMissing(tagMsgSeqNum)
 	}

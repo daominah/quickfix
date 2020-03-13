@@ -10,6 +10,7 @@ type SessionSettings struct {
 	ResetOnDisconnect            bool
 	HeartBtInt                   time.Duration
 	SessionTime                  *TimeRange
+	// InitiateLogon is true means we are client
 	InitiateLogon                bool
 	ResendRequestChunkSize       int
 	EnableLastMsgSeqNumProcessed bool
