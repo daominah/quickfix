@@ -42,6 +42,8 @@ func (state inSession) FixMsgIn(session *session, msg *Message) sessionState {
 		var err MessageRejectError
 		if !IsHNXInfoGateProtocol {
 			err = session.verify(msg)
+		} else {
+			session.fromCallback(msg)
 		}
 		if err != nil {
 			return state.processReject(session, msg, err)

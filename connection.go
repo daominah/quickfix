@@ -18,7 +18,7 @@ func writeLoop(connection io.Writer, messageOut chan []byte, log Log) {
 		if err != nil {
 			log.OnEvent(err.Error())
 		}
-		zlog.Debugf("writeLoop: err %v, msg: %s", err, msg)
+		//zlog.Debugf("writeLoop: err %v, msg: %s", err, msg)
 	}
 }
 
