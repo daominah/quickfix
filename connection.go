@@ -17,7 +17,7 @@ func writeLoop(connection io.Writer, messageOut chan []byte, log Log) {
 		if err != nil {
 			log.OnEvent(err.Error())
 		}
-		zlog.Debugf("conn sent: err %v, msg: %s", err, msg)
+		zlog.Debugf("writeLoop: err %v, msg: %s", err, msg)
 	}
 }
 
@@ -27,6 +27,7 @@ func readLoop(parser *parser, msgIn chan fixIn) {
 	for {
 		msg, err := parser.ReadMessage()
 		if err != nil {
+			zlog.Infof("readLoop err: %v", err)
 			return
 		}
 		msgIn <- fixIn{msg, parser.lastRead}

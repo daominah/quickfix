@@ -175,11 +175,20 @@ func (s *ParserSuite) TestReadMessageGrowBuffer() {
 }
 
 func TestParseHNXInfoGateMsg(t *testing.T) {
-	stream := "spam8=HNX.TDS.19=4935=A49=HNX52=20200312-09:44:0558=Accept login"
-	parser := newParser(strings.NewReader(stream))
-	msg, err := parser.ReadMessage()
-	if err != nil {
-		t.Fatal(err)
+	bu := IsHNXInfoGateProtocol
+	IsHNXInfoGateProtocol = true
+	streams := []string{
+		"spam8=HNX.TDS.19=4935=A49=HNX52=20200312-09:44:0558=Accept login",
+		"8=HNX.TDS.19=10635=S49=HNX52=20200312-09:44:051=22=HNXIndex" +
+			"15=7819955=PHN28=2019031411=3264259.95000012=0.082888hahaha",
 	}
-	t.Errorf("msg.Bytes: %s", msg.Bytes())
+	for i, stream := range streams {
+		parser := newParser(strings.NewReader(stream))
+		msg, err := parser.ReadMessage()
+		if err != nil {
+			t.Fatalf("loop %v, err: %v", i, err)
+		}
+		_ = msg
+	}
+	IsHNXInfoGateProtocol = bu
 }

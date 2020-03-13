@@ -193,7 +193,7 @@ func ParseMessageWithDataDictionary(
 	msg.Header.add(msg.fields[fieldIndex : fieldIndex+1])
 	fieldIndex++
 
-	trailerBytes := []byte{}
+	trailerBytes := make([]byte, 0)
 	foundBody := false
 	for {
 		parsedFieldBytes = &msg.fields[fieldIndex]
@@ -212,15 +212,14 @@ func ParseMessageWithDataDictionary(
 			trailerBytes = rawBytes
 			msg.Body.add(msg.fields[fieldIndex : fieldIndex+1])
 		}
-		if parsedFieldBytes.tag == tagCheckSum {
+		fieldIndex++
+		if parsedFieldBytes.tag == tagCheckSum || fieldIndex >= fieldCount {
 			break
 		}
 
 		if !foundBody {
 			msg.bodyBytes = rawBytes
 		}
-
-		fieldIndex++
 	}
 
 	//body length would only be larger than trailer if fields out of order

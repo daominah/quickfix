@@ -3,11 +3,12 @@ package quickfix
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"time"
 
+	"github.com/daominah/gomicrokit/log"
 	"github.com/quickfixgo/quickfix/internal"
-	"fmt"
 )
 
 const (
@@ -36,11 +37,11 @@ func (p *parser) readMore() (int, error) {
 			p.bigBuffer = make([]byte, defaultBufSize)
 			newBuffer = p.bigBuffer[0:0]
 
-		//shift buffer back to the start of bigBuffer
+			//shift buffer back to the start of bigBuffer
 		case 2*len(p.buffer) <= len(p.bigBuffer):
 			newBuffer = p.bigBuffer[0:len(p.buffer)]
 
-		//reallocate big buffer with enough space to shift buffer
+			//reallocate big buffer with enough space to shift buffer
 		default:
 			p.bigBuffer = make([]byte, 2*len(p.buffer))
 			newBuffer = p.bigBuffer[0:len(p.buffer)]
@@ -104,7 +105,7 @@ func (p *parser) findEndAfterOffset(offset int) (int, error) {
 
 // jumpLength returns an index base on value of FIXTagBodyLength (9=).
 // In case of HNX InfoGate msg (without FIXTagCheckSum), this func returns
-//
+// index of the last '\001'
 func (p *parser) jumpLength() (int, error) {
 	lengthIndex, err := p.findIndex([]byte("9="))
 	if err != nil {
@@ -135,6 +136,7 @@ func (p *parser) jumpLength() (int, error) {
 }
 
 func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
+	log.Debugf("parser_ReadMessage cp0")
 	start, err := p.findStart()
 	if err != nil {
 		return nil, fmt.Errorf("error when findStart: %v", err)
@@ -146,13 +148,19 @@ func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
 		return nil, fmt.Errorf("error when jumpLength: %v", err)
 	}
 
-	index, err = p.findEndAfterOffset(index)
-	if err != nil {
-		return nil, fmt.Errorf("error when findEndAfterOffset: %v", err)
+	if IsHNXInfoGateProtocol { // HNX removed FIXTagCheckSum
+		index += 1
+	} else {
+		index, err = p.findEndAfterOffset(index)
+		if err != nil {
+			return nil, fmt.Errorf("error when findEndAfterOffset: %v", err)
+		}
 	}
 
 	msgBytes = bufferPool.Get()
 	msgBytes.Reset()
+	// TODO: concurrent test
+	log.Debugf("parser_ReadMessage: err: %v, msg: %s", err, p.buffer[:index])
 	msgBytes.Write(p.buffer[:index])
 	p.buffer = p.buffer[index:]
 
