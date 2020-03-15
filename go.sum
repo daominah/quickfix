@@ -10,6 +10,8 @@ github.com/daominah/gomicrokit v0.2.1 h1:1mUi0S7vdbU18Jwi6JNz9y66BEC3fLo6GTaEX/x
 github.com/daominah/gomicrokit v0.2.1/go.mod h1:+GS+i1qj6C8XcAMuN+C4fX6mYaSji4VB7xE2lA9Fmk4=
 github.com/daominah/quickfixdev v0.1.0 h1:Xdp/yllFS05k9dkPdYmeJa/UtvfqNJPFRgteaJNwpzM=
 github.com/daominah/quickfixdev v0.1.0/go.mod h1:V5wgXjdlF2eLgh7AvSY22gG+pvQo2wsO5hW6kZ5SYA4=
+github.com/daominah/quickfixdev v0.1.1 h1:pe82XwhdqjIx1h+cCc3emIwBsxGCIxyCZ1Lw8zOtWd4=
+github.com/daominah/quickfixdev v0.1.1/go.mod h1:V5wgXjdlF2eLgh7AvSY22gG+pvQo2wsO5hW6kZ5SYA4=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
