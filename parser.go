@@ -165,7 +165,7 @@ func (p *parser) ReadMessage() (msgBytes *bytes.Buffer, err error) {
 		_ = log.Debugf
 		currentBuff := make([]byte, len(p.buffer))
 		copy(currentBuff, p.buffer)
-		log.Debugf("error not received full FIXMsg: %s", currentBuff)
+		//log.Debugf("error not received full FIXMsg: %s", currentBuff)
 		_, ioErr := p.readMore()
 		if ioErr != nil {
 			return nil, ioErr
